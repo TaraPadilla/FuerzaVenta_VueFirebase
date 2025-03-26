@@ -41,8 +41,8 @@
     </v-row>
     <v-row>
       <v-col cols="12" md="4">
-                <!-- Combo de Equipo -->
-                <v-select
+          <!-- Combo de Equipo -->
+          <v-select
           v-model="asistencia.equipo_id"
           :items="equipos"
           item-title="nombre"
@@ -105,15 +105,33 @@
         </v-chip-group>
       </v-col>
     </v-row>
+    <v-row>
+      <v-col cols="12" class="d-flex justify-center" v-if="fotoPreview">
+        <v-img 
+          :src="fotoPreview" 
+          class="photo-preview" 
+          max-width="150" 
+          max-height="150" 
+          style="border: 1px solid #ccc; border-radius: 8px;" 
+          contain 
+        />
+      </v-col>
+    </v-row>
 
     <!-- Botones de Cámara y PDF (conservados) -->
     <v-row>
       <v-col cols="12" class="text-center">
-        <router-link to="/layout/camera">
-          <v-btn color="primary" class="mx-2">
-            Ir a la Cámara
-          </v-btn>
-        </router-link>
+        <v-btn color="primary" @click="irACamara">Tomar Foto</v-btn>
+        <v-btn color="info" class="mx-2" @click="$refs.inputFoto.click()">
+          Cargar Foto
+        </v-btn>
+        <input
+          ref="inputFoto"
+          type="file"
+          accept="image/*"
+          @change="manejarCargaFoto"
+          style="display: none"
+        />
 
         <v-btn color="secondary" @click="descargarPDF" class="mx-2">
           Descargar PDF
@@ -122,7 +140,7 @@
     </v-row>
 
     <!-- Campo para la URL de la foto -->
-    <v-row>
+    <!-- <v-row>
       <v-col cols="12">
         <v-text-field
           label="URL de la foto"
@@ -133,44 +151,53 @@
           disabled
         />
       </v-col>
-    </v-row>
+    </v-row> -->
 
     <!-- Botón para registrar la asistencia -->
     <v-row>
       <v-col class="text-center">
-        <v-btn color="success" @click="registrarAsistencia">
+        <v-btn color="success" :disabled="!fotoPreview" @click="registrarAsistencia">
           Registrar Asistencia
         </v-btn>
       </v-col>
     </v-row>
     <v-dialog v-model="dialogErrores" max-width="500">
-      <v-card>
-        <v-card-title class="text-h6">Campos incompletos</v-card-title>
-        <v-card-text>
-          <v-list dense>
-            <v-list-item v-for="(error, index) in mensajesErrores" :key="index">
-              <v-list-item-content>{{ error }}</v-list-item-content>
-            </v-list-item>
-          </v-list>
-        </v-card-text>
-        <v-card-actions>
-          <v-spacer></v-spacer>
-          <v-btn color="primary" text @click="dialogErrores = false">Cerrar</v-btn>
-        </v-card-actions>
-      </v-card>
-    </v-dialog>
+        <v-card>
+          <v-card-title class="text-h6">Aviso</v-card-title>
+          <v-card-text>
+            <div v-if="Array.isArray(mensajesErrores)">
+              <v-list dense>
+                <v-list-item v-for="(error, index) in mensajesErrores" :key="index">
+                  <v-list-item-content>{{ error }}</v-list-item-content>
+                </v-list-item>
+              </v-list>
+            </div>
+            <div v-else>
+              {{ mensajesErrores }}
+            </div>
+          </v-card-text>
+          <v-card-actions>
+            <v-spacer></v-spacer>
+            <v-btn color="primary" text @click="dialogErrores = false">Cerrar</v-btn>
+          </v-card-actions>
+        </v-card>
+      </v-dialog>
+
   </v-container>
 </template>
 
 <script>
-import { auth } from "@/firebase";
+import { auth, storage } from "@/firebase";
 import { obtenerZonas } from "@/services/zonasService";
 import { generatePDF } from "@/utils/generatePDF";
+import { getDownloadURL, ref as storageRef, uploadBytes } from "firebase/storage";
 import { onMounted, ref } from "vue";
+import { useRouter } from "vue-router";
 import { crearAsistencia } from "../services/asistenciaService";
 import { obtenerEquipos } from "../services/equiposService";
 import { obtenerUsuariosSupervisores } from "../services/usuariosService";
 import { nombresAmigables, validarAsistencia } from "../services/validationService";
+import { tempFoto } from "../stores/tempFoto";
 
 
 export default {
@@ -183,7 +210,9 @@ export default {
     const dialogErrores = ref(false);
     const mensajesErrores = ref([]);
     const errores = ref([]);
-
+    const fotoPreview = ref(null);
+    const router = useRouter();
+    
     const asistencia = ref({
       zona_id: "",
       supervisor_id: "",
@@ -194,6 +223,55 @@ export default {
       hora_salida: "17:00",
       foto_url: ""
     });
+
+    onMounted(async () => {
+      const guardada = sessionStorage.getItem("asistenciaTemporal");
+      // Carga datos base primero
+      await cargarZonas();
+      await cargarSupervisores();
+      await cargarEquipos(); // Esperamos que se llene equipos.value
+
+      if (guardada) {
+        asistencia.value = JSON.parse(guardada);
+        sessionStorage.removeItem("asistenciaTemporal");
+        console.log("Asistencia restaurada desde sessionStorage:", asistencia.value);
+
+        if (!asistencia.value.asesores_dia || asistencia.value.asesores_dia.length === 0) {
+          cargarAsesoresPorEquipo();
+        }
+        } else {
+          console.log("No hay asistencia guardada en sessionStorage");
+        }
+
+      if (tempFoto.fotoBase64) { 
+        console.log('tempFoto:', tempFoto.fotoBase64);
+        fotoPreview.value = tempFoto.fotoBase64;
+      }
+    });
+
+    const manejarCargaFoto = (evento) => {
+      const archivo = evento.target.files[0];
+      if (!archivo) return;
+
+      const lector = new FileReader();
+      lector.onload = () => {
+        const base64 = lector.result;
+        fotoPreview.value = base64;
+        tempFoto.fotoBase64 = base64;
+      };
+      lector.readAsDataURL(archivo);
+    };
+
+
+    function irACamara() {
+      try {
+        sessionStorage.setItem("asistenciaTemporal", JSON.stringify(asistencia.value));
+        console.log("Guardando asistencia temporal:", asistencia.value);
+        router.push("/layout/camera");
+      } catch (err) {
+        console.error("Error en router.push:", err);
+      }
+    }
 
     const asesorTemporal = ref("");
     const descargarPDF = () => {
@@ -243,15 +321,53 @@ export default {
           ([campo, mensaje]) => `${nombresAmigables[campo] || campo}: ${mensaje}`
         );
         dialogErrores.value = true;
+
+        return;
+      }
+
+      // 1. Verificar que haya una foto
+      if (!tempFoto.fotoBase64) {
+        mensajesErrores.value = "Primero toma o carga una foto para guardar la asistencia";
+        dialogErrores.value = true;
         return;
       }
 
       try {
+        // 2. Convertir base64 a blob
+        const blob = await fetch(tempFoto.fotoBase64).then(res => res.blob());
+
+         // 3. Subir a Firebase Storage
+        const fileRef = storageRef(storage, `fotos/${Date.now()}.png`);
+        await uploadBytes(fileRef, blob);
+        const downloadURL = await getDownloadURL(fileRef);
+
+        // 4. Asignar URL a la asistencia
+        asistencia.value.foto_url = downloadURL;
+
+        // 5. Guardar asistencia como antes
         await crearAsistencia(asistencia.value);
-        alert("Asistencia guardada con éxito");
+        mensajesErrores.value = "Asistencia guardada con éxito";
+        dialogErrores.value = true;
+
+        // 6. Limpiar todo tras guardar exitosamente
+        asistencia.value = {
+          zona_id: "",
+          supervisor_id: "",
+          equipo_id: "",
+          asesores_dia: [],
+          fecha: new Date().toISOString().split("T")[0],
+          hora_entrada: "08:00",
+          hora_salida: "17:00",
+          foto_url: ""
+        };
+
+        fotoPreview.value = null;
+        asesorTemporal.value = "";
+        tempFoto.fotoBase64 = null;
+
       } catch (error) {
-        console.error("Error al guardar la asistencia:", error);
-        alert("Error al guardar la asistencia");
+        mensajesErrores.value = "Error al guardar la asistencia";
+        dialogErrores.value = true;
       }
     };
 
@@ -267,12 +383,6 @@ export default {
     const cargarEquipos = async () => {
       equipos.value = await obtenerEquipos();
     };
-
-    onMounted(() => {
-      cargarZonas();
-      cargarSupervisores();
-      cargarEquipos();
-    });
 
     return {
       user,
@@ -292,7 +402,10 @@ export default {
       cargarSupervisores,
       cargarEquipos,
       dialogErrores,
-      mensajesErrores
+      mensajesErrores,
+      fotoPreview,
+      irACamara,
+      manejarCargaFoto
     };
   },
 };

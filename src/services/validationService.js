@@ -5,8 +5,7 @@ export const nombresAmigables = {
     asesores_dia: "Asesores",
     fecha: "Fecha",
     hora_entrada: "Hora de Entrada",
-    hora_salida: "Hora de Salida",
-    foto_url: "Foto"
+    hora_salida: "Hora de Salida"
   };
 
 export const reglasAsistencia = {
@@ -16,8 +15,7 @@ export const reglasAsistencia = {
     asesores_dia: { requerido: true, tipo: "array", min: 1 },
     fecha: { requerido: true, tipo: "string" },
     hora_entrada: { requerido: true, tipo: "string" },
-    hora_salida: { requerido: true, tipo: "string" },
-    foto_url: { requerido: true, tipo: "string" },
+    hora_salida: { requerido: true, tipo: "string" }
   };
   
   export function validarAsistencia(datos) {
