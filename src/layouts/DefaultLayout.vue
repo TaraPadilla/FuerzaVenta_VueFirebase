@@ -22,11 +22,11 @@
           </v-list-item-content>
         </v-list-item>
 
-        <v-list-item @click="router.push('/layout/usuarios')">
+        <!-- <v-list-item @click="router.push('/layout/usuarios')">
           <v-list-item-content>
             <v-list-item-title>Gestión de Usuarios</v-list-item-title>
           </v-list-item-content>
-        </v-list-item>
+        </v-list-item> -->
 
         <v-list-item @click="router.push('/layout/historico')">
           <v-list-item-content>
@@ -34,11 +34,11 @@
           </v-list-item-content>
         </v-list-item>
 
-        <v-list-item @click="logout">
+        <!-- <v-list-item @click="logout">
           <v-list-item-content>
             <v-list-item-title>Cerrar sesión</v-list-item-title>
           </v-list-item-content>
-        </v-list-item>
+        </v-list-item> -->
       </v-list>
     </v-navigation-drawer>
 

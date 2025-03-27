@@ -4,16 +4,14 @@ import Camera from '../views/Camera.vue'
 import Control from '../views/Control.vue'
 import EquiposView from '../views/EquiposView.vue'
 import HistoricoView from '../views/HistoricoView.vue'
-import Login from '../views/Login.vue'
 import UsuariosView from '../views/UsuariosView.vue'
 import ZonasView from '../views/ZonasView.vue'
 
 const routes = [
   {
     path: '/',
-    name: 'Login',
-    component: Login,
-  },
+    redirect: '/layout/control',
+  },  
   {
     path: '/layout',
     component: DefaultLayout,
