@@ -132,9 +132,9 @@
           style="display: none"
         />
 
-        <v-btn color="secondary" @click="descargarPDF" class="mx-2">
+        <!-- <v-btn color="secondary" @click="descargarPDF" class="mx-2">
           Descargar PDF
-        </v-btn>
+        </v-btn> -->
       </v-col>
     </v-row>
 
