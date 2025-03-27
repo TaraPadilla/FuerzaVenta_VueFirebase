@@ -6,7 +6,6 @@
         <div class="titulo-header">Informe Fuerza de Venta Directa</div>
       </div>
       <div class="contenido">
-        <h2>ZONA</h2>
         <h1>{{ obtenerNombreZona(zona, zonas ) }}</h1>
       </div>
       <div class="footer-bar">

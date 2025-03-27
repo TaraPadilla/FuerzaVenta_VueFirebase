@@ -116,6 +116,7 @@ export default {
 
     const irAInforme = () => {
       const periodoTexto = obtenerTextoPeriodo(asistenciasFiltradas.value, filtros.value);
+      console.log('periodoTexto '+ periodoTexto);
       setInforme(asistenciasFiltradas.value, periodoTexto);
       router.push({ name: 'informe' });
     };

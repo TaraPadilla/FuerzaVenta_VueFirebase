@@ -24,7 +24,7 @@
             <div class="encabezado-zona">
               <h2 v-if="supervisores.length">{{ obtenerNombreSupervisor(subgrupo.supervisor_id, supervisores) }}</h2>
               <h2 v-else>SUPERVISOR: Cargando...</h2>
-  
+              
               <p class="periodo">Periodo: {{ tituloRef }}</p>
               <p class="anio">Año: {{ anioActual }}</p>
             </div>
@@ -38,11 +38,11 @@
                 <img :src="registro.foto_url" alt="Foto del equipo" class="foto" />
                 <div class="info">
                   <p class="zona-nombre">
-                    Asistencia {{ zonas.length ? obtenerNombreZona(grupo.zona, zonas) : grupo.zona }}
+                     {{ zonas.length ? obtenerNombreZona(grupo.zona, zonas) : grupo.zona }}
                   </p>
                   <p><strong>Supervisor:</strong> {{ obtenerNombreSupervisor(registro.supervisor_id, supervisores) }}</p>
                   <p><strong>Día:</strong> {{ registro.fecha }}</p>
-                  <p><strong>Equipo:</strong> {{ registro.equipo_nombre }}</p>
+                  <p><strong>Equipo:</strong> {{ obtenerNombreEquipo(registro.equipo_id, equipos) }}</p>
                   <p><strong>Entrada:</strong> {{ registro.hora_entrada }} - {{ registro.hora_salida }}</p>
                   <ol class="asesores">
                     <li v-for="asesor in registro.asesores_dia" :key="asesor">{{ asesor }}</li>
@@ -65,6 +65,7 @@
   
   <script setup>
 import Portada from '@/components/Portada.vue';
+import { obtenerEquipos, obtenerNombreEquipo } from "@/services/equiposService";
 import { obtenerNombreZona, obtenerZonas } from "@/services/zonasService";
 import { getInforme } from '@/stores/informeStore';
 import { computed, onMounted, ref } from 'vue';
@@ -73,11 +74,15 @@ import { obtenerNombreSupervisor, obtenerUsuariosSupervisores } from '../service
 
 const zonas = ref([]);
 const supervisores = ref([]);
+const equipos = ref([]);
 const { datos, titulo } = getInforme()
+console.log(datos);
+console.log(titulo);
 
 onMounted(async () => {
   zonas.value = await obtenerZonas();
   supervisores.value = await obtenerUsuariosSupervisores();
+  equipos.value = await obtenerEquipos();
   console.log('Datos cargados:', datosRef.value);
 });
 
@@ -86,33 +91,33 @@ onMounted(async () => {
   
   const anioActual = new Date().getFullYear()
   
-    const seccionesPorZona = computed(() => {
-        const zonasAgrupadas = {};
-        console.log('Procesando datos para seccionesPorZona...', datosRef.value); // <-- AQUI
+  const seccionesPorZona = computed(() => {
+    const zonasAgrupadas = {};
+    console.log('Procesando datos para seccionesPorZona...', datosRef.value); // <-- AQUI
 
-        datosRef.value.forEach(registro => {
-            const zona = registro.zona_id || 'Sin Zona';
-            const supervisor = registro.supervisor_id || 'Sin Supervisor';
+    datosRef.value.forEach(registro => {
+      const zona = registro.zona_id || 'Sin Zona';
+      const supervisor = registro.supervisor_id || 'Sin Supervisor';
 
-            if (!zonasAgrupadas[zona]) {
-            zonasAgrupadas[zona] = {};
-            }
+      if (!zonasAgrupadas[zona]) {
+        zonasAgrupadas[zona] = {};
+      }
 
-            if (!zonasAgrupadas[zona][supervisor]) {
-            zonasAgrupadas[zona][supervisor] = [];
-            }
+      if (!zonasAgrupadas[zona][supervisor]) {
+        zonasAgrupadas[zona][supervisor] = [];
+      }
 
-            zonasAgrupadas[zona][supervisor].push(registro);
-        });
-
-        return Object.entries(zonasAgrupadas).map(([zona, supervisoresMap]) => ({
-            zona,
-            supervisores: Object.entries(supervisoresMap).map(([supervisor_id, asistencias]) => ({
-            supervisor_id,
-            asistencias
-            }))
-        }));
+      zonasAgrupadas[zona][supervisor].push(registro);
     });
+
+    return Object.entries(zonasAgrupadas).map(([zona, supervisoresMap]) => ({
+      zona,
+      supervisores: Object.entries(supervisoresMap).map(([supervisor_id, asistencias]) => ({
+      supervisor_id,
+      asistencias
+    }))
+    }));
+  });
 
   
   const imprimir = () => {
