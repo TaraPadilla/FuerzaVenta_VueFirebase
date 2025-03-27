@@ -8,13 +8,15 @@ import { collection, deleteDoc, doc, getDocs, query, setDoc, updateDoc, where } 
  * @param {string} role - Rol del usuario ("admin" o "supervisor")
  * @param {boolean} activo - Estado del usuario (activo o deshabilitado)
  */
-export async function crearUsuario(nombre, email, role, activo = true) {
+export async function crearUsuario(documento, tipo, nombre, email, role, activo = true) {
     try {
-        const idUsuario = nombre.toLowerCase().replace(/\s+/g, "_");
+        const idUsuario = String(documento); // el ID del documento debe ser string
 
         const usuarioRef = doc(collection(db, "usuarios"), idUsuario);
         await setDoc(usuarioRef, {
             idUsuario,
+            documento,
+            tipo,
             nombre,
             email,
             role,
@@ -79,7 +81,7 @@ export async function eliminarUsuario(id) {
 export async function obtenerUsuariosSupervisores() {
     try {
         const usuariosRef = collection(db, "usuarios");
-        const q = query(usuariosRef, where("role", "==", "supervisor"));
+        const q = query(usuariosRef, where("role", "==", "Supervisor"));
         const querySnapshot = await getDocs(q);
 
         let usuarios = [];
@@ -94,3 +96,9 @@ export async function obtenerUsuariosSupervisores() {
         return [];
     }
 }
+
+export function obtenerNombreSupervisor(SupervisorId, SupervisorLista) {
+    if (!SupervisorLista || SupervisorLista.length === 0) return "Cargando...";
+    const supervisor = SupervisorLista.find(z => z.id === SupervisorId);
+    return supervisor ? supervisor.nombre : SupervisorId;
+  }

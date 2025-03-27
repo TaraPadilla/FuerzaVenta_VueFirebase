@@ -8,7 +8,7 @@ import { collection, deleteDoc, doc, getDocs, setDoc, updateDoc } from "firebase
  */
 export async function crearZona(nombre, responsable = "") {
     try {
-        const idZona = nombre.toLowerCase().replace(/\s+/g, "_");
+        const idZona = nombre.toLowerCase().replace(/\s+/g, "");
         const zonaRef = doc(collection(db, "zonas"), idZona);
 
         await setDoc(zonaRef, {
@@ -70,3 +70,9 @@ export async function eliminarZona(id) {
         console.error("Error al eliminar la zona:", error);
     }
 }
+
+export function obtenerNombreZona(zonaId, zonasLista) {
+    if (!zonasLista || zonasLista.length === 0) return "Cargando...";
+    const zona = zonasLista.find(z => z.id === zonaId);
+    return zona ? zona.nombre : zonaId;
+  }

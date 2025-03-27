@@ -4,9 +4,21 @@
         <v-card-title class="text-h5">Gestión de Usuarios</v-card-title>
         <v-card-text>
           <v-form @submit.prevent="guardarUsuario">
+            <v-text-field
+              v-model.number="nuevoUsuario.documento"
+              label="Nro Documento"
+              required
+            ></v-text-field>
+
+            <v-select
+              v-model="nuevoUsuario.tipo_documento"
+              :items="['CC', 'CE', 'TI']"
+              label="Tipo de documento"
+              required
+            ></v-select>
             <v-text-field v-model="nuevoUsuario.nombre" label="Nombre" required></v-text-field>
             <v-text-field v-model="nuevoUsuario.email" label="Email" required></v-text-field>
-            <v-select v-model="nuevoUsuario.role" :items="['admin', 'supervisor']" label="Rol" required></v-select>
+            <v-select v-model="nuevoUsuario.role" :items="['Administrador', 'Supervisor']" label="Rol" required></v-select>
             <v-switch v-model="nuevoUsuario.activo" label="Activo" color="primary"></v-switch>
             <v-btn type="submit" color="primary" class="mt-4">
               {{ editando ? "Actualizar Usuario" : "Crear Usuario" }}
@@ -42,6 +54,7 @@
             <v-row v-else>
                 <v-col v-for="usuario in usuariosFiltrados" :key="usuario.id" cols="12">
                 <v-card>
+                    <v-card-title>{{ usuario.documento }} - {{ usuario.tipo_documento }}</v-card-title>
                     <v-card-title>{{ usuario.nombre }}</v-card-title>
                     <v-card-subtitle>{{ usuario.email }}</v-card-subtitle>
                     <v-card-text>
@@ -62,8 +75,8 @@
     </v-container>
 </template>
   
-  <script>
-  import { actualizarUsuario, crearUsuario, obtenerUsuarios } from "@/services/usuariosService";
+<script>
+import { actualizarUsuario, crearUsuario, obtenerUsuarios } from "@/services/usuariosService";
 import { computed, onMounted, ref } from "vue";
   
   export default {
@@ -75,6 +88,8 @@ import { computed, onMounted, ref } from "vue";
       const esMovil = ref(false);
       
       const headers = ref([
+        { text: "Documento", value: "documento" },
+        { text: "TipoDoc", value: "tipo_documento" },
         { text: "Nombre", value: "nombre" },
         { text: "Email", value: "email" },
         { text: "Rol", value: "role" },
@@ -92,7 +107,10 @@ import { computed, onMounted, ref } from "vue";
       };
   
       const guardarUsuario = async () => {
-            if (!nuevoUsuario.value.nombre || !nuevoUsuario.value.email || !nuevoUsuario.value.role) {
+
+            if (!nuevoUsuario.value.documento || !nuevoUsuario.value.tipo_documento 
+              || !nuevoUsuario.value.nombre || !nuevoUsuario.value.email 
+              || !nuevoUsuario.value.role) {
                 alert("Completa todos los campos.");
                 return;
             }
@@ -100,6 +118,8 @@ import { computed, onMounted, ref } from "vue";
                 await actualizarUsuario(usuarioEditandoId.value, { ...nuevoUsuario.value, activo: Boolean(nuevoUsuario.value.activo) });
             } else {
                 await crearUsuario(
+                    nuevoUsuario.value.documento,
+                    nuevoUsuario.value.tipo_documento,
                     nuevoUsuario.value.nombre,
                     nuevoUsuario.value.email,
                     nuevoUsuario.value.role,
@@ -120,7 +140,9 @@ import { computed, onMounted, ref } from "vue";
       const cancelarEdicion = () => {
         editando.value = false;
         usuarioEditandoId.value = null;
-        nuevoUsuario.value = { nombre: "", email: "", role: "", zona: "", activo: true };
+        nuevoUsuario.value = { 
+          documento: "", tipo_documento: "",
+          nombre: "", email: "", role: "", zona: "", activo: true };
       };
   
       const eliminarUsuario = async (id) => {

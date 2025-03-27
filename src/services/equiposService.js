@@ -96,3 +96,9 @@ export async function obtenerZonas() {
     }
 }
 
+export function obtenerNombreEquipo(equipoId, equiposLista) {
+    if (!equiposLista || equiposLista.length === 0) return "Cargando...";
+    const equipo = equiposLista.find(z => z.id === equipoId);
+    return equipo ? equipo.nombre : equipoId;
+  }
+

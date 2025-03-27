@@ -47,6 +47,12 @@ const routes = [
         path: 'historico',
         name: 'historico',
         component: HistoricoView,
+      },
+      {
+        path: 'informe',
+        name: 'informe',
+        component: () => import('../views/InformeView.vue'),
+        props: true
       }
     ]
   }

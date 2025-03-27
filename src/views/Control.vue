@@ -1,6 +1,5 @@
 <template>
   <v-container>
-
     <!-- Encabezado / Saludo -->
     <v-row>
       <v-col cols="12">
@@ -156,7 +155,7 @@
     <!-- Botón para registrar la asistencia -->
     <v-row>
       <v-col class="text-center">
-        <v-btn color="success" :disabled="!fotoPreview" @click="registrarAsistencia">
+        <v-btn color="success" :disabled="!fotoPreview" @click="dialogConfirmacion = true">
           Registrar Asistencia
         </v-btn>
       </v-col>
@@ -182,11 +181,21 @@
           </v-card-actions>
         </v-card>
       </v-dialog>
+      <ConfirmarAsistenciaDialog
+        v-model="dialogConfirmacion"
+        :asistencia="asistencia"
+        :fotoPreview="fotoPreview"
+        :zonas="zonas"
+        :equipos="equipos"
+        :supervisores="supervisores"
+        @confirmar="registrarAsistencia"
+      />
 
   </v-container>
 </template>
 
 <script>
+import ConfirmarAsistenciaDialog from "@/components/ConfirmarAsistenciaDialog.vue";
 import { auth, storage } from "@/firebase";
 import { obtenerZonas } from "@/services/zonasService";
 import { generatePDF } from "@/utils/generatePDF";
@@ -200,7 +209,11 @@ import { nombresAmigables, validarAsistencia } from "../services/validationServi
 import { tempFoto } from "../stores/tempFoto";
 
 
+
 export default {
+  components: {
+    ConfirmarAsistenciaDialog,
+  },
   setup() {
     const user = ref(auth.currentUser);
     const zonas = ref([]);
@@ -212,7 +225,8 @@ export default {
     const errores = ref([]);
     const fotoPreview = ref(null);
     const router = useRouter();
-    
+    const dialogConfirmacion = ref(false);
+
     const asistencia = ref({
       zona_id: "",
       supervisor_id: "",
@@ -343,6 +357,8 @@ export default {
 
         // 4. Asignar URL a la asistencia
         asistencia.value.foto_url = downloadURL;
+        asistencia.value.creation_date = new Date().toISOString();
+
 
         // 5. Guardar asistencia como antes
         await crearAsistencia(asistencia.value);
@@ -405,7 +421,8 @@ export default {
       mensajesErrores,
       fotoPreview,
       irACamara,
-      manejarCargaFoto
+      manejarCargaFoto,
+      dialogConfirmacion
     };
   },
 };
